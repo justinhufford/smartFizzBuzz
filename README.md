@@ -1,2 +1,1 @@
-# smartFizzBuzz
-A FizzBuzz program with ChatGPT integration because it's the future
+You'll need an OpenAI API key set as an environment variable to use this.
