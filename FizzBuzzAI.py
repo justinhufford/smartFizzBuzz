@@ -19,13 +19,86 @@ start = 1
 limit = 100
 speed = 0.01
 
-fizz='Fizz'
-fizzNum=int(3)
+word_number_pairs = {
+    'Fizz': 3,
+    'Buzz': 5
+    # More pairs can be added dynamically
+}
 
-buzz='Buzz'
-buzzNum=int(5)
+def update_word_number_pairs(command):
+    global word_number_pairs
 
-fizzbuzz= fizz + buzz + '!' 
+    parts = command.split()
+    action = parts[0].lower()
+    word = parts[1]
+
+    if action == 'add' and len(parts) == 3:
+        # Add a new word-number pair
+        try:
+            number = int(parts[2])
+            word_number_pairs[word] = number
+            print(f"\nAdded: {word} for numbers divisible by {number}")
+        except ValueError:
+            print("\nInvalid number for 'add' command.")
+    elif action == 'remove':
+        # Remove an existing word-number pair
+        if word in word_number_pairs:
+            del word_number_pairs[word]
+            print(f"\nRemoved: {word}")
+        else:
+            print(f"\n{word} not found in the current settings.")
+    elif action == 'change' and len(parts) == 3:
+        # Change the number for an existing word
+        if word in word_number_pairs:
+            try:
+                number = int(parts[2])
+                word_number_pairs[word] = number
+                print(f"\nChanged {word} to trigger on numbers divisible by {number}")
+            except ValueError:
+                print("\nInvalid number for 'change' command.")
+
+
+def update_settings(response):
+    global start, limit, speed
+
+    commands = response.split('\n')
+    for command in commands:
+        parts = command.split()
+        if len(parts) < 2:
+            print(f"\nInvalid command format: {command}")
+            continue
+
+        action = parts[0].lower()
+
+        if action in ['add', 'remove', 'change']:
+            update_word_number_pairs(command)
+        elif action == 'set' and len(parts) == 3:
+            setting = parts[1].lower()
+            value = parts[2]
+            value = parts[2]
+
+            if setting == 'start':
+                try:
+                    start = int(value)
+                    print(f"\nStart number set to {start}")
+                except ValueError:
+                    print("\nInvalid value for start number.")
+            elif setting == 'limit':
+                try:
+                    limit = int(value)
+                    print(f"\nLimit number set to {limit}")
+                except ValueError:
+                    print("\nInvalid value for limit number.")
+            elif setting == 'speed':
+                try:
+                    speed = float(value)
+                    print(f"\nCounting speed set to {speed} seconds per number")
+                except ValueError:
+                    print("\nInvalid value for speed.")
+        else:
+            print(f"\nInvalid command: {command}")
+
+
 
 
 def chat_with_gpt(client, messages, model="gpt-4-1106-preview", stream=False):
@@ -56,24 +129,24 @@ def map_chunks(chunk):
 
 def count_and_print(start, limit):
     for num in range(start, limit + 1):
-        if num / fizzNum == int(num / fizzNum) and num / buzzNum == int(num / buzzNum):
-            print(fizzbuzz)
-        elif num / fizzNum == int(num / fizzNum) and num / buzzNum != int(num / buzzNum):
-            print(fizz)
-        elif num / buzzNum == int(num / buzzNum) and num / fizzNum != int(num / fizzNum):
-            print(buzz)
-        else:
-            print(num)
+        output = ''
+
+        for word, divisor in word_number_pairs.items():
+            if num % divisor == 0:
+                output += word
+
+        print(output if output else num)
         time.sleep(speed)
 
 
 
+
 def run():
-    count_and_print(start,limit)
+    count_and_print(start, limit)
     print()
     sys.stdout.flush()
     time.sleep(0.8)
-    print('Would you like to make any adjustments to the rules??')
+    print('Would you like to make any adjustments to the rules?')
     aiconfig()
 
 
@@ -81,48 +154,44 @@ def run():
 
 
 def aiconfig():
-    global start, limit, speed, fizz, fizzNum, buzz, buzzNum, fizzbuzz
+    global word_number_pairs, start, limit, speed
 
-    request = input()
+    request = input("")
     request_prompt = [{"role": "system", "content": f"""
-You are the AI brain of a FizzBuzz python program. Here are the current settings for the fizzbuzz output:
-start = {start} (the number to start counting from)
-limit = {limit} (the number to count to)
-speed = {speed} (how fast it counts, or sleep.time between printing each number)
+You are the AI brain of a FizzBuzz python program. Current settings are:
 
-'Fizz' Settings:
-fizz = {fizz} (The first word to display)
-fizzNum = {fizzNum} (Replaces num with word if divisible by this)
+Start number: {start} (The number the program starts counting from. Default: 1)
+Limit number: {limit} (The number the program counts to. Default: 100)
+Counting speed: {speed} (seconds per number. Default: 0)
+Word-Number Pairs: {', '.join([f'{word} (divisible by {number})' for word, number in word_number_pairs.items()])} (Default: 'Fizz': 3, 'Buzz': 5)
 
-'Buzz' Settings:
-buzz = {buzz} (The second word to display)
-buzzNum = {buzzNum} (Replaces num with word if divisible by this)
+You can modify these settings by issuing commands in the following formats:
+- To change start or limit number: 'set start [Number]' or 'set limit [Number]'
+- To change counting speed: 'set speed [Seconds]'
+- To add a new word-number pair: 'add [Word] [Number]'
+- To remove a word-number pair: 'remove [Word]'
+- To change the number for a word: 'change [Word] [Number]'
 
-'FizzBuzz' Settings:
-fizzbuzz = {fizzbuzz} (the text to display when both conditions are met)
+For example, to change the start number to 5, say 'set start 5'. To add a pair that prints 'Boink' for numbers divisible by 10, say 'add Boink 10'.
 
-The user has made the following request: '{request}'. Please interpret this request to the best of your abilities and adjust the current settings. If the user changes 'Fizz' or 'Buzz', ake sure to adjust the combined 'FizzBuzz' accordingly as well. Only print a comma-separated settings string and nothing else. Do not add any clarification, explanation, or questions.
-Current Settings:{start},{limit},{speed},{fizz},{fizzNum},{buzz},{buzzNum},{fizzbuzz}
-Update Settings:"""}]
-    update_settings = chat_with_gpt(client, request_prompt)
-    update_values = update_settings.split(",")
+The user has made the following request: '{request}'. Please interpret this request to the best of your abilities and format your response to adjust the current settings accordingly. Only output your command to the best of your abilities without adding any explanation or questions, as any additoinal text will crash the program.
+""" }]
 
-    start = int(update_values[0])
-    limit = int(update_values[1])
-    speed = float(update_values[2])
+    update_request = chat_with_gpt(client, request_prompt)
 
-    fizz=update_values[3]
-    fizzNum=int(update_values[4])
+    # Print ChatGPT's Response for troubleshooting
+    print()
+    print("ChatGPT's Response:", update_request)
 
-    buzz=update_values[5]
-    buzzNum=int(update_values[6])
-
-    fizzbuzz= update_values[7]
+    update_settings(update_request)
     run()
 
 
 
+
 def main():
+    print(FizzBuzz)
+    time.sleep(1)
     run()
 
 
