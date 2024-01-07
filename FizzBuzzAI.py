@@ -17,7 +17,7 @@ client = OpenAI()
 
 start = 1
 limit = 100
-speed = 0.01
+speed = 0
 
 word_number_pairs = {
     'Fizz': 3,
